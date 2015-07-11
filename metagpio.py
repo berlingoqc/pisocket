@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import newgpio
 import pwm
+import messagebox
 #import spi
 #import mycam
 import gpioqueue
@@ -23,8 +24,14 @@ class Server(object):
 
     def __init__(self):
         print("Jecoute sur le port 1995")
+        self.listObject = {}
         Thread(target=self.ecoute, args=()).start()
-        
+        self.i = 0
+
+    def id_obj(self):
+        self.i += 1
+        return self.i
+
     def ecoute(self):
         activethread = []
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -43,9 +50,16 @@ class Server(object):
             if tramedec[0] == 0:
                 #demarre la thread qui utilisera cette object
                 print("Demarre ServerObject")
-                th = ServerObject(tramedec[1], tramedec[2], retour[1])
+                indice = id_obj()
+                self.listObject[indice][0] = ServerObject(tramedec[1], tramedec[2], retour[1], indice)
+                th = ServerObject(tramedec[1], tramedec[2], retour[1], id_obj())
                 th.start()
                 activethread.append(th)
+            elif tramedec[0] == 97:
+                #Reconnection au serveur object donc faut renvoye l'adresse
+                addr = self.listObject[retour[2]][0].Get_Bind_Adr()
+                #Envoye le numero du port ensuite sur X nbr de byte
+                sock.sendto(b'\x00\xCC')
             else:
                 #erreur dans le opcode de la  trame
                 print("fermeture serveur")
@@ -59,22 +73,31 @@ class Server(object):
 
 class ServerObject(Thread):
 
-    def __init__(self, listclasse, dictPin, adr):
+    def __init__(self, listclasse, dictPin, adr, idobj):
         print(listclasse)
         print(dictPin)
         self.sortit = True
+        self.MB = messagebox.MessageBox()
+        #CODE deconnection
+        self.ClientConnect = [True, idoobj]
         self.dictpwm = {}
         self.event = event.Event()
-        self.sock = None
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.bind(("0.0.0.0",0))
+        sock.settimeout(2)
         self.objectgpio = Object_GPIO(listclasse, dictPin)
         self.adr = (adr[0], 1996)
-        self.function = {1:write,2:read,3:setup,5:spi,4:unexport,7:start_pwm,16:stop_pwm,98:stop_server}
+        self.function = {1:write,2:read,3:setup,5:spi,4:unexport,7:start_pwm,\
+        8:stop_pwm,17:start_event,18:get_event_detected,19:stop_event,98:stop_server}
         Thread.__init__(self, name="Thread Serveur object {0}".format(adr[0]))
 
     def finish(self):
         self.sortit = False
 
-    def CloseThreadPwm(handle):
+    def Get_Bind_Adr(self):
+        return self.sock.getsockname()
+
+    def CloseThreadPwm(self, handle):
         if self.dictpwm.__contains__(handle):
             self.dictpwm[handle].Stop_Thread()
             return 0
@@ -152,8 +175,14 @@ class ServerObject(Thread):
             if self.event.Event_Detected():
                 #Send True return
                 self.sock.sendto(b'\x00\x55',self.adr)
+            else:
+                self.sock.sendto(b'\x00\x50',self.adr)
         elif retour[0] == 78:
-            if self.event.Event_Detected_Spi() 
+            if self.event.Event_Detected_Spi():
+                self.sock.sendto(b'\x00\x56',self.adr)
+            else:
+                self.sock.sendto(b'\x00\x50',self.adr)
+
 
 
     def stop_event(self, data):
@@ -171,6 +200,12 @@ class ServerObject(Thread):
         sortit = False
         self.objectgpio.Clean_All()
 
+    def fermeture_client(self):
+        #Le client se ferme donc maintenant impossible de le rejoindre sur son port
+        #donc on doit mettre les alertes des events et autres dans la message box
+        self.ClientConnect[0] = False
+        return self.ClientConnect[1]
+
     def NACK(self):
         sock.sendto(b'\x00\x72', self.adr)
 
@@ -179,17 +214,15 @@ class ServerObject(Thread):
 
     def run(self):
         print("Thread Ecoute pour serveur object")
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.bind(("0.0.0.0",0))
-        sock.settimeout(2)
+        
 
         #ack
-        sock.sendto(b'\x00\x71', self.adr)
+        self.sock.sendto(b'\x00\x71', self.adr)
         print("Ack send")
 
         while self.sortit:
             try:
-                data = sock.recv(516)
+                data = self.sock.recv(516)
             except EOFError:
                 sortit = False
             except socket.timeout:

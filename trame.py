@@ -97,7 +97,7 @@ def dec_op_StartEvent(trame):
     if trame[2] < 4:
         #Event sur une pin
         # retour [0] 0:opcode 1:pin 2: mode(string) 3: continue, 3 ???
-        retour = 0, trame[2], modeEdge[trame[3]], True if trame[3]&4==4 else False,3 
+        retour = 0, trame[2], modeEdge[trame[3]], True if trame[3]&16==16 else False,3 
     else:
         #Event sur SPI
         #retour [0] 0:opcode, 1:(0:Opcode 1:Channel 2:indice Function ), value sur deux bytes, endvalue
@@ -156,6 +156,9 @@ def dec_trameInitial(trame):
         dictPin = dict((trame[i]&63, ["in" if trame[i]&64 == 64 else "out","1" if trame[i]&128 == 128 else "0"]) for i in range(4, len(trame)) if trame[i]&63 in range(40))
     elif trame[1] == 113:
         erreurcode = 98
+    elif trame[0] == 170 and trame[1] == 186:
+        #Reconnection au serveur renvoit l'adresse et le port de la thread
+        erreurcode == 97
     else:
         erreurcode = 99
     return erreurcode, listclasse, dictPin
