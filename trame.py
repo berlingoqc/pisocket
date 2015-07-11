@@ -33,9 +33,22 @@ from binascii import hexlify
 
 """
 indicepwm = 0
+
+def _channelorpin(data,retour):
+    if (data[2] & 63) > 0:
+        #Pin
+        return (retour[0], data[2] & 63)
+    elif (data[2] & 192) in [64,128,192]:
+        #Spi
+        if (data[2] & 64) == 64 and (data[2] & 128) == 0:
+            return(retour[1], 0)
+        elif (data[2] & 64) == 0 and data[2] & 128) == 128:
+            return(retour[1], 1)
+    pass
 def incpwm():
     indicepwm += 1
     return indicepwm
+
 def dec_op_WR(trame):
     #si le deuxieme bytes == 1 wrq ==2 rrq
     #doit rajouter fonction validation pour savoir si la pin est bonne direction
@@ -57,7 +70,66 @@ def dec_op_Pwm(trame):
 def dec_op_SPI(trame):
     #Retour la valeur du SPI sur le channel 0 ou 1 avec une choix d'option de fonction pour les 7 premier bits 
     # 0 0 0 0  0 0 0 0 bits 0 == channel, bits 1 == Valeur Potentiometre bits 2 == Valeur Analog bits 3 == voltage ..
-    return (5,trame[1]&1,(trame[1]&254)/2) if trame[1]&254 in [4,8,26,32,64,128] else 1
+    a = 1
+    for i in range(2,7):
+        if (trame[2] & 254) == (1 << i):
+            break
+        a += 1
+
+    return (5,trame[2]&1,a) else 1
+
+
+def dec_op_StartEvent(trame):
+
+    # Deux premiers bytes op code
+    # troisieme : valeur event ( 0: None 1: Falling 2: rising 3: both) 2 bits
+    #            3: 0 == arreter event apres premier execution 1 == continuer ...
+    #            si 3 bits sont eteints event sur spi veut dire que ces un
+    #            event sur le SPI attend la valeur donné selon le mode choisit
+    #
+    #
+    # Apres suite de commande qui seront execute lorsque l'evenement
+    # arrivera chaque commande est separée par x00xFF
+    retour = None
+    modeEdge = ["none","falling","rising","both"]
+    #indice pour demarrer la liste de commande a exectuer
+    startindice = 0
+    if trame[2] < 4:
+        #Event sur une pin
+        # retour [0] 0:opcode 1:pin 2: mode(string) 3: continue, 3 ???
+        retour = 0, trame[2], modeEdge[trame[3]], True if trame[3]&4==4 else False,3 
+    else:
+        #Event sur SPI
+        #retour [0] 0:opcode, 1:(0:Opcode 1:Channel 2:indice Function ), value sur deux bytes, endvalue
+        retour = 1 , dec_op_SPI(trame[3:6]), (trame[7] << 8) + trame[8],
+    #Retourne une list de list de commande contenu dans la trame    
+    listcommande = dec_ListCommande(trame[startindice:])
+    #Construit un dict avec le opcode de la commande et le tuple du retour en valeur
+    listFunction = { 1:dec_op_WR,2:dec_op_WR,3:dec_op_ModifPin,5:dec_op_SPI,7:dec_op_Pwm}
+    # retour [0] 0:opcode 1:pin 2: mode(string) 3: continue
+    return retour, dict([ (cmd[1], listFunction[cmd[1]](cmd)) for cmd in listcommande if listFunction.__contains__(cmd[1]) else (cmd[1], None)])
+
+def dec_op_EventDetected(trame):
+    return _channelorpin(trame, (77,78))
+
+def dec_op_StopEvent(trame):
+    return _channelorpin(trame, (79,80))
+
+def dec_ListCommande(trame):
+    a = []
+    l = []
+    for i, b in emumerate(trame):
+        if b == 255 and trame[i-1] == 0: 
+            l.append(a)
+            a = []
+            continue
+        a.append[i]
+    return l
+
+def dec_op_GetEventStatus(trame):
+    return _channelorpin(trame, (81,82))
+def dec_op_DeleteEvent(trame):
+    return _channelorpin(trame, (83,84))
 
 def dec_trameInitial(trame):
     if trame[0] != 170 or trame[0] != 0:

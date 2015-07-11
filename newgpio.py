@@ -20,7 +20,6 @@ class GPIO(object):
     def __init__(self,kargs):
         #if super pwm
         self.Clean_All()
-        self.dictGPIO = {}
         self.Setup(kargs)
     #Thread function
     def _threadEdge(self,pin,mode):
@@ -57,9 +56,9 @@ class GPIO(object):
         self._write("/sys/class/gpio/export",str(pin))
         self.dictGPIO[pin] = None
     def _edge(self,mode):
-        x = ["falling", "rising", "both"]
+        x = ["none","falling", "rising", "both"]
         if x.__contains__(mode):
-            return True
+            return x[mode]
 
     #Public function
     def Wait_Edge(self, pin, mode):

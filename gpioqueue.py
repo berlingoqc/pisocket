@@ -1,14 +1,37 @@
-class Queue(object):
-    def Enqueue(self,*kargs):
-        self.items = []
-        for v in kargs:
-            self.items.append(v)
+import newgpio
+
+class Queue(newgpio.GPIO):
     
-    def Print_Queue(self):
-        for i in self.items: print(i)
+    def __init__():
+        self.listcmd = []
+
+    def __str__(self):
+        print(i) for i in self.items
     
-    def Dequeue(self, nbr=1):
+    def enqueue(self,dictCmd):
+        for k,v in dictCmd.items():
+            if k == 1:
+                a = lambda: self.Set_Value(v[1],v[2]),0
+            elif k == 2:
+                a = lambda: self.Get_Value(V[1]),1, v[1]
+            elif k == 3:
+                a = lambda: self.Setup({v[1]:[v[2],v[3]]}),0
+            elif k == 4:
+                a == lambda: self._unexport(v[1]),0
+            self.listcmd.append(a)
+
+    def dequeue(self, nbr=0, keep=False):
+        dictretour = {}
+        keeplist = []
+        nbr = len(self.listcmd) if nbr == 0 else nbr
         for i in range(nbr): 
-            pin = self.items.pop(0)
-            v = self.items.pop(0)
-            self.Set_Value(pin,v)
+            function = self.listcmd.pop(0)
+            if keep:
+                keeplist.append(function)
+            if function[1] == 1:
+                 dictretour[function[2]] = function[0]()
+            else:
+                function()
+            self.listcmd += keeplist
+        return dictretour
+

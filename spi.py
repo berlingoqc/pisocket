@@ -17,7 +17,7 @@ class SPI():
         for i in listMsg:
             msg = msg + '\n' + i
         return msg
-    def Get_Voltage(self,channel=0):
+    def Get_Voltage(self,channel):
         raw = self.Read_Analog(channel)
         percent = raw / 1023.0
         #the value return by the MCP3002 is a interger between 0 and 1023
