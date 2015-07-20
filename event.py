@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from threading import Thread, Lock
-import newgpi
+import newgpio
 import gpioqueue
 import select
 
@@ -91,7 +91,7 @@ class Event(newgpio.GPIO):
 
     def Delete_Event_Spi(self,channel):
         if channel is not None and self.SpiEvent.__contains__(channel):
-            self.SpiEvent[channel[1] = False
+            self.SpiEvent[channel][1] = False
             del self.SpiEvent[channel]
             return True
         return False
@@ -108,5 +108,5 @@ class Event(newgpio.GPIO):
         if self.SpiEvent[channel][0]:
             self.SpiEvent[channel][0] = False
             return True, self.SpiEvent[3][1]
-        else
+        else:
             return False

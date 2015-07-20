@@ -42,12 +42,15 @@ def _channelorpin(data,retour):
         #Spi
         if (data[2] & 64) == 64 and (data[2] & 128) == 0:
             return(retour[1], 0)
-        elif (data[2] & 64) == 0 and data[2] & 128) == 128:
+        elif (data[2] & 64) == 0 and (data[2] & 128) == 128:
             return(retour[1], 1)
     pass
-def incpwm():
-    indicepwm += 1
-    return indicepwm
+class inc:
+    def __init__(s):
+        i = 0
+    def inc():
+        i += 1
+        return indicepwm
 
 def dec_op_WR(trame):
     #si le deuxieme bytes == 1 wrq ==2 rrq
@@ -64,8 +67,8 @@ def dec_op_ModifPin(trame):
 
 def dec_op_Pwm(trame):
     # OP CODE , PIN # , FREQUENCE (short), DUTYCYCLE 
-    #Retourne le classique et a la fin un handle pour eteindre la thrad
-	return (7, trame[2], (trame[3]<<8)+trame[4], trame[5],incpwm()) if trame[2] < 40 else 0
+    #Retourne le classique
+	return (7, trame[2], (trame[4]<<8)+trame[3], trame[5]) if trame[2] < 40 else 0
 
 def dec_op_SPI(trame):
     #Retour la valeur du SPI sur le channel 0 ou 1 avec une choix d'option de fonction pour les 7 premier bits 
@@ -76,7 +79,7 @@ def dec_op_SPI(trame):
             break
         a += 1
 
-    return (5,trame[2]&1,a) else 1
+    return (5,trame[2]&1,a)
 
 
 def dec_op_StartEvent(trame):
@@ -107,7 +110,8 @@ def dec_op_StartEvent(trame):
     #Construit un dict avec le opcode de la commande et le tuple du retour en valeur
     listFunction = { 1:dec_op_WR,2:dec_op_WR,3:dec_op_ModifPin,5:dec_op_SPI,7:dec_op_Pwm}
     # retour [0] 0:opcode 1:pin 2: mode(string) 3: continue
-    return retour, dict([ (cmd[1], listFunction[cmd[1]](cmd)) for cmd in listcommande if listFunction.__contains__(cmd[1]) else (cmd[1], None)])
+    return retour, dict([ (cmd[1], listFunction[cmd[1]](cmd))for cmd in listcommande\
+                          if listFunction.__contains__(cmd[1])])
 
 def dec_op_EventDetected(trame):
     return _channelorpin(trame, (77,78))
@@ -132,7 +136,7 @@ def dec_op_DeleteEvent(trame):
     return _channelorpin(trame, (83,84))
 
 def dec_trameInitial(trame):
-    if trame[0] != 170 or trame[0] != 0:
+    if type(trame[0]) is not int:
         trame = [int(hexlify(i),16) for i in trame]
     classe = ("pwm","spi","queue","event","cam","hc")
     masque = [1,2,4,8,16,32]
@@ -158,7 +162,7 @@ def dec_trameInitial(trame):
         erreurcode = 98
     elif trame[0] == 170 and trame[1] == 186:
         #Reconnection au serveur renvoit l'adresse et le port de la thread
-        erreurcode == 97
-    else:
+        return 97, trame[2]
+    elif trame[0] == 170 and trame[1] == 202 :
         erreurcode = 99
     return erreurcode, listclasse, dictPin

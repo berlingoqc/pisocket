@@ -41,8 +41,12 @@ class GPIO(object):
                     previous_state = last_state[0]
     #Private function
     def _write(self,path,contents):
-        with open(path, 'w') as f:
-            f.write(contents)
+        try:
+            with open(path, 'w') as f:
+                f.write(contents)
+            return True
+        except IOError:
+            return False
     def _read(self,path):
         with open(path, 'r') as f:
             retour = f.read()
@@ -54,7 +58,6 @@ class GPIO(object):
         if os.path.isfile("/sys/class/gpio/gpio%i/direction" % pin):
             self._unexport(pin)
         self._write("/sys/class/gpio/export",str(pin))
-        self.dictGPIO[pin] = None
     def _edge(self,mode):
         x = ["none","falling", "rising", "both"]
         if x.__contains__(mode):
@@ -99,7 +102,8 @@ class GPIO(object):
                 self.Set_Value(k,v[1])
     def Set_Value(self,pin,value):
         assert value in ("1","0")
-        self._write("/sys/class/gpio/gpio%i/value" % pin,value)
+        while self._write("/sys/class/gpio/gpio%i/value" % pin,value):
+            pass
     def Get_Value(self,pin):
         retour = self._read("/sys/class/gpio/gpio%i/value" % pin)
         return retour

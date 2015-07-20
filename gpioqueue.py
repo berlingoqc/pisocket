@@ -6,7 +6,8 @@ class Queue(newgpio.GPIO):
         self.listcmd = []
 
     def __str__(self):
-        print(i) for i in self.items
+        for i in self.listcmd:
+            print(i)
     
     def enqueue(self,dictCmd):
         for k,v in dictCmd.items():
@@ -17,7 +18,7 @@ class Queue(newgpio.GPIO):
             elif k == 3:
                 a = lambda: self.Setup({v[1]:[v[2],v[3]]}),0
             elif k == 4:
-                a == lambda: self._unexport(v[1]),0
+                a = lambda: self._unexport(v[1]),0
             self.listcmd.append(a)
 
     def dequeue(self, nbr=0, keep=False):
