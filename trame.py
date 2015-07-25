@@ -157,12 +157,13 @@ def dec_trameInitial(trame):
         #Cree dict avec les pin et leurs directions
         #Et verification si la pin n'est pas deja export
         #listpin = tuple(newgpio.listPinExport())
+        erreurcode = 1
         dictPin = dict((trame[i]&63, ["in" if trame[i]&64 == 64 else "out","1" if trame[i]&128 == 128 else "0"]) for i in range(4, len(trame)) if trame[i]&63 in range(40))
     elif trame[1] == 113:
         erreurcode = 98
     elif trame[0] == 170 and trame[1] == 186:
         #Reconnection au serveur renvoit l'adresse et le port de la thread
         return 97, trame[2]
-    elif trame[0] == 170 and trame[1] == 202 :
+    elif trame[0] == 170 and trame[1] == 250:
         erreurcode = 99
     return erreurcode, listclasse, dictPin

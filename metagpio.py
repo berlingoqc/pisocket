@@ -49,7 +49,7 @@ class Server(Thread):
                 continue
             print(retour)
             tramedec = trame.dec_trameInitial(retour[0])
-            if tramedec[0] == 0:
+            if tramedec[0] == 1:
                 #demarre la thread qui utilisera cette object
                 indice = self.id_obj()
                 print("Demarre ServerObject avec handle : {0}".format(indice))
@@ -84,7 +84,6 @@ class ServerObject(Thread):
         self.MB = messagebox.MessageBox()
         self.ClientConnect = [True, idobj]
         self.dictpwm = {}
-        self.gpio = newgpio.GPIO(dictPin)
         self.event = event.Event()
         #self.objectgpio = Object_GPIO(listclasse, dictPin)
         self.adr = (adr[0], 1996)
@@ -92,6 +91,7 @@ class ServerObject(Thread):
                          4:self.unexport,7:self.start_pwm,\
         8:self.stop_pwm,17:self.start_event,18:self.get_event_detected,19:self.stop_event,97:self.fermeture_client,98:self.stop_server}
         Thread.__init__(self)
+        self.gpio = newgpio.GPIO(dictPin)
         self.start()
 
     def finish(self):
